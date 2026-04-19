@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Mercado Manu v139 - Master</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f59e0b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="MercadoManu">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { color-scheme: light; }
+    body { background-color: #f2f2f7; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+    .ios-card { background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); border-radius: 22px; border: 0.5px solid rgba(0,0,0,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 15px; overflow: hidden; }
+    .ios-input { background: #e9e9eb; border-radius: 14px; padding: 12px 15px; font-size: 16px; border: none; outline: none; font-weight: 600; width: 100%; }
+    .nav-tabbar { position: fixed; bottom: 0; left: 0; right: 0; height: 90px; background: rgba(248,248,248,0.96); backdrop-filter: blur(20px); border-top: 0.5px solid #d1d1d6; display: flex; justify-content: space-around; padding-top: 10px; padding-bottom: 30px; z-index: 1000; }
+    .nav-item { display: flex; flex-direction: column; align-items: center; color: #8e8e93; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .nav-item.active { color: #007aff; }
+    .sug-box { position: absolute; top: 100%; left: 0; right: 0; background: white; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 9999; max-height: 200px; overflow-y: auto; }
+    .sug-item { padding: 14px; border-bottom: 0.5px solid #f2f2f7; display: flex; align-items: center; gap: 12px; font-weight: 600; }
+    .local-group-header { font-size: 11px; font-weight: 900; color: #007aff; padding: 10px 15px; text-transform: uppercase; letter-spacing: 1px; background: #eef2ff; }
+    .btn-add { background: #007aff; color: white; border-radius: 16px; font-weight: 800; padding: 16px; width: 100%; text-transform: uppercase; transition: transform 0.1s; }
+    .btn-add:active { transform: scale(0.97); }
+    .detail-table { width: 100%; font-size: 9px; border-collapse: collapse; }
+    .detail-table td { padding: 10px 2px; border-bottom: 0.5px solid #f2f2f7; vertical-align: top; }
+    #customAlert { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 10000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+    .alert-box { background: white; border-radius: 20px; width: 100%; max-width: 300px; text-align: center; overflow: hidden; animation: pop 0.3s cubic-bezier(0.175,0.885,0.32,1.275); }
+    @keyframes pop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .spinning { animation: spin 1s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    input { text-transform: uppercase; }
+  </style>
+</head>
+<body class="p-4 pb-44">
+
+  <div id="customAlert">
+    <div class="alert-box shadow-2xl">
+      <div class="p-6">
+        <h3 id="alertTitle" class="text-lg font-black text-slate-800">¿Confirmar?</h3>
+        <p id="alertMsg" class="text-xs text-gray-500 mt-2 font-medium">Esta acción no se puede deshacer.</p>
+      </div>
+      <div class="flex border-t border-gray-100">
+        <button onclick="closeAlert(false)" class="flex-1 p-4 text-sm font-bold text-gray-400 border-r border-gray-100 uppercase">No</button>
+        <button id="btnConfirm" class="flex-1 p-4 text-sm font-black text-red-500 uppercase">Sí, Seguro</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="secCalc" class="tab-content">
+    <div class="ios-card">
+      <div id="headerColor" class="px-6 pt-6 pb-8 bg-[#f59e0b] text-white text-center transition-all duration-300">
+        <div class="flex justify-between items-center mb-4">
+          <div class="bg-black/20 px-3 py-1.5 rounded-full flex items-center gap-2 border border-white/20">
+            <span class="text-[10px] font-black italic">BCV</span>
+            <input type="tel" id="tasa" value="36,50" class="bg-transparent w-16 font-bold outline-none text-white text-center" oninput="recalculoRapido()">
+            <button onclick="fetchBCV()"><svg id="iconRefresh" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button>
+          </div>
+          <button onclick="showAlert('¿VACIAR CARRITO?','Se perderán los cambios actuales.',function(){ carrito=[]; recalculoRapido(); })" class="text-[10px] font-bold bg-white/20 px-3 py-1.5 rounded-full">VACIAR</button>
+        </div>
+        <div id="displaySaldo" style="font-size:clamp(2.5rem,13vw,4rem);line-height:1.15;padding-bottom:6px;" class="font-black tracking-tighter w-full text-center">0,00</div>
+        <div id="displayEquiv" class="text-sm font-black mt-3 py-1 px-4 bg-white/20 rounded-lg inline-block italic">0,00 Bs</div>
+      </div>
+      <div class="p-4">
+        <div class="flex gap-2 p-1 bg-gray-100 rounded-xl mb-3">
+          <button id="monUSD" onclick="setMoneda('USD')" class="flex-1 py-2 rounded-lg text-xs font-black bg-white shadow-sm text-orange-600 uppercase">Dólares ($)</button>
+          <button id="monBS" onclick="setMoneda('BS')" class="flex-1 py-2 rounded-lg text-xs font-black text-gray-500 uppercase">Bolívares (Bs)</button>
+        </div>
+        <input type="tel" id="presu" placeholder="PRESUPUESTO..." class="w-full text-center text-4xl font-black bg-transparent outline-none text-slate-800" oninput="recalculoRapido()">
+      </div>
+    </div>
+    <div class="ios-card p-4 space-y-4 relative">
+      <div class="relative"><input type="text" id="local" placeholder="📍 ¿DÓNDE COMPRAS?" class="ios-input !text-blue-600 italic"><div id="sugLocal" class="sug-box hidden"></div></div>
+      <div class="flex gap-2 relative">
+        <div class="flex-[7] relative"><input type="text" id="prod" placeholder="PRODUCTO..." class="ios-input"><div id="sugBox" class="sug-box hidden"></div></div>
+        <input type="tel" id="cant" placeholder="CANT." class="flex-[3] ios-input text-center !text-blue-600 font-black">
+      </div>
+      <div id="compBox" class="hidden bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-center gap-3"><span class="text-xl">💡</span><p id="compTexto" class="text-[10px] font-black text-amber-900 uppercase italic"></p></div>
+      <div class="grid grid-cols-2 gap-2">
+        <div class="relative"><span class="absolute left-3 top-3.5 text-orange-600 font-bold">$</span><input type="tel" id="inUSD" placeholder="0.00" class="ios-input text-center text-orange-600 font-black pl-7"></div>
+        <div class="relative"><span class="absolute left-3 top-3.5 text-emerald-600 font-bold">Bs</span><input type="tel" id="inBS" placeholder="0.00" class="ios-input text-center text-emerald-600 font-black pl-9"></div>
+      </div>
+      <button onclick="agregar()" class="btn-add shadow-lg">Agregar al Carrito</button>
+    </div>
+    <div id="lista" class="space-y-3"></div>
+  </div>
+
+  <div id="secPlan" class="tab-content hidden">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-black text-slate-800">Faltantes</h1>
+      <button onclick="showAlert('¿LIMPIAR TODO?','Se borrará tu lista de pendientes.',function(){ saveDB('plan_v139',[]); renderPlan(); })" class="text-red-500 text-[10px] font-black uppercase">Vaciar</button>
+    </div>
+    <div class="ios-card p-5">
+      <input type="text" id="itemPlan" placeholder="¿QUÉ NECESITAS?" class="ios-input mb-3 text-center">
+      <button onclick="anotarPlan()" class="btn-add !bg-orange-500">Anotar en la lista</button>
+    </div>
+    <div id="listaPlan" class="space-y-3"></div>
+  </div>
+
+  <div id="secHist" class="tab-content hidden">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-black text-slate-800">Historial</h1>
+      <button onclick="showAlert('¿BORRAR HISTORIAL?','Se eliminarán todas las compras guardadas.',function(){ saveDB('hist_v139',[]); renderHist(); })" class="text-red-500 text-[10px] font-black uppercase">Borrar Todo</button>
+    </div>
+    <div id="listaHistorial" class="space-y-6"></div>
+  </div>
+
+  <div id="footer" class="fixed bottom-[90px] left-0 right-0 bg-white/95 backdrop-blur-md p-4 flex justify-between items-center border-t z-[900]">
+    <div>
+      <span class="text-[10px] font-black text-gray-400 uppercase">Gasto Total</span>
+      <p id="totalGasto" class="text-2xl font-black text-emerald-600 leading-none">0,00 Bs</p>
+      <p id="totalGastoUsd" class="text-xs font-bold text-orange-600 italic">0,00 $</p>
+    </div>
+    <button onclick="finalizar()" class="bg-black text-white px-10 py-4 rounded-2xl font-black text-xs uppercase shadow-lg">Cerrar Compra</button>
+  </div>
+
+  <nav class="nav-tabbar">
+    <div onclick="verTab('Calc')" id="tabCalc" class="nav-item active"><svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM17 18c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2zM7.17 14.75l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.86-7.01L19.42 4H5.21l-.94-2H1v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25z"/></svg><span>Mercado</span></div>
+    <div onclick="verTab('Plan')" id="tabPlan" class="nav-item"><svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><span>Lista</span></div>
+    <div onclick="verTab('Hist')" id="tabHist" class="nav-item"><svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg><span>Historial</span></div>
+  </nav>
+
+  <script>
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(function(){}); }
+
+    var carrito = [];
+    var moneda = 'USD';
+    var emojis = {'ARROZ':'🍚','LECHE':'🥛','HUEVO':'🥚','QUESO':'🧀','POLLO':'🍗','CARNE':'🥩','PAN':'🍞','PASTA':'🍝','HARINA':'🌽','CAFE':'☕','AZUCAR':'🍬','AGUA':'💧','PAPA':'🥔','CEBOLLA':'🧅','TOMATE':'🍅'};
+    var localesFijos = ["UNICASA","FORUM","CENTRAL MADEIRENSE","PLAZA'S","GAMA","FARMATODO","SAN DIEGO","MARAPLUS","HIPER LIDER"];
+
+    function getDB(k) { try { return JSON.parse(localStorage.getItem(k)) || []; } catch(e) { return []; } }
+    function saveDB(k,v) { localStorage.setItem(k, JSON.stringify(v)); }
+    function fmt(n) { return parseFloat(n).toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+    // ======= PREDICCIÓN =======
+    // Busca en historial guardado Y en el carrito actual
+    function buscarMejorPrecio(producto) {
+      var nombreBusqueda = String(producto).trim().toUpperCase();
+      if (!nombreBusqueda) return null;
+      var palabras = nombreBusqueda.split(' ').filter(function(p){ return p.length > 2; });
+      var minUSD = Infinity;
+      var mejoresLocales = [];
+      var fechaRef = '';
+
+      function coincideNombre(nombreItem) {
+        var n = String(nombreItem).trim().toUpperCase();
+        if (n === nombreBusqueda) return true;
+        if (n.indexOf(nombreBusqueda) !== -1) return true;
+        if (nombreBusqueda.indexOf(n) !== -1) return true;
+        for (var i = 0; i < palabras.length; i++) {
+          if (n.indexOf(palabras[i]) !== -1) return true;
+        }
+        return false;
+      }
+
+      function procesarItem(item, fecha) {
+        if (!item || !item.nombre) return;
+        if (!coincideNombre(item.nombre)) return;
+        var pU = parseFloat(item.uUSD);
+        if (isNaN(pU) || pU <= 0) return;
+        var loc = String(item.local || 'GENERAL').trim();
+        if (pU < minUSD) {
+          minUSD = pU;
+          mejoresLocales = [loc];
+          fechaRef = fecha || '';
+        } else if (Math.abs(pU - minUSD) < 0.001 && mejoresLocales.indexOf(loc) === -1) {
+          mejoresLocales.push(loc);
+        }
+      }
+
+      // 1. Buscar en historial guardado
+      var hist = getDB('hist_v139');
+      for (var h = 0; h < hist.length; h++) {
+        var compra = hist[h];
+        if (!compra || !compra.items) continue;
+        for (var j = 0; j < compra.items.length; j++) {
+          procesarItem(compra.items[j], compra.fecha);
+        }
+      }
+
+      // 2. Buscar también en el carrito actual (sesión vigente)
+      for (var k = 0; k < carrito.length; k++) {
+        procesarItem(carrito[k], 'Compra actual');
+      }
+
+      return minUSD === Infinity ? null : { precio: minUSD, locales: mejoresLocales, fecha: fechaRef };
+    }
+
+    // ======= ALERTAS =======
+    var pendingAction = null;
+    function showAlert(title, msg, action) {
+      document.getElementById('alertTitle').innerText = title;
+      document.getElementById('alertMsg').innerText = msg;
+      document.getElementById('customAlert').style.display = 'flex';
+      pendingAction = action;
+    }
+    function closeAlert(ok) {
+      document.getElementById('customAlert').style.display = 'none';
+      if (ok && pendingAction) pendingAction();
+      pendingAction = null;
+    }
+    document.getElementById('btnConfirm').onclick = function(){ closeAlert(true); };
+
+    // ======= BCV AUTO + MANUAL =======
+    function fetchBCV() {
+      var icon = document.getElementById('iconRefresh');
+      icon.classList.add('spinning');
+      fetch('https://ve.dolarapi.com/v1/dolares/oficial')
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+          if (data && data.promedio) {
+            document.getElementById('tasa').value = data.promedio.toFixed(2).replace('.',',');
+            recalculoRapido();
+          }
+        })
+        .catch(function(){})
+        .finally(function(){ setTimeout(function(){ icon.classList.remove('spinning'); }, 800); });
+    }
+    fetchBCV();
+    setInterval(fetchBCV, 5 * 60 * 1000);
+
+    // ======= SUGERENCIAS =======
+    document.getElementById('local').addEventListener('input', function(e) {
+      var v = e.target.value.toUpperCase();
+      var box = document.getElementById('sugLocal');
+      if (!v) { box.classList.add('hidden'); return; }
+      var historicos = getDB('locales_v139');
+      var todos = localesFijos.concat(historicos).filter(function(l,i,a){ return a.indexOf(l)===i; });
+      var matches = todos.filter(function(l){ return l.indexOf(v) !== -1; });
+      box.innerHTML = matches.map(function(m){ return '<div class="sug-item" onclick="selLoc(\''+m+'\')">📍 '+m+'</div>'; }).join('');
+      box.classList.toggle('hidden', matches.length === 0);
+    });
+    function selLoc(m) { document.getElementById('local').value = m; document.getElementById('sugLocal').classList.add('hidden'); }
+
+    document.getElementById('prod').addEventListener('input', function(e) {
+      var v = e.target.value.toUpperCase();
+      var sugBox = document.getElementById('sugBox');
+      var compBox = document.getElementById('compBox');
+      var compTexto = document.getElementById('compTexto');
+      if (!v) { sugBox.classList.add('hidden'); compBox.classList.add('hidden'); return; }
+      var rec = buscarMejorPrecio(v);
+      if (rec) {
+        compBox.classList.remove('hidden');
+        compTexto.innerText = 'Mejor: $' + fmt(rec.precio) + ' en ' + rec.locales.join(' / ');
+      } else {
+        compBox.classList.add('hidden');
+      }
+      var prodHist = getDB('prods_v139');
+      var todosProd = Object.keys(emojis).concat(prodHist).filter(function(k,i,a){ return a.indexOf(k)===i; });
+      var matches = todosProd.filter(function(k){ return k.indexOf(v) !== -1; });
+      sugBox.innerHTML = matches.map(function(m){ return '<div class="sug-item" onclick="selProd(\''+m+'\')"><span>'+(emojis[m]||'📦')+'</span><span>'+m+'</span></div>'; }).join('');
+      sugBox.classList.toggle('hidden', matches.length === 0);
+    });
+    function selProd(m) { document.getElementById('prod').value = m; document.getElementById('sugBox').classList.add('hidden'); document.getElementById('cant').focus(); }
+
+    // ======= CARRITO =======
+    function agregar() {
+      var p = document.getElementById('prod').value.toUpperCase().trim();
+      var l = document.getElementById('local').value.toUpperCase().trim() || 'GENERAL';
+      var c = parseFloat(document.getElementById('cant').value) || 1;
+      var t = parseFloat(document.getElementById('tasa').value.replace(',','.')) || 1;
+      var vU = document.getElementById('inUSD').value.replace(',','.');
+      var vB = document.getElementById('inBS').value.replace(',','.');
+      if (!p || (!vU && !vB)) return;
+      saveDB('locales_v139', localesFijos.concat(getDB('locales_v139')).concat([l]).filter(function(x,i,a){ return a.indexOf(x)===i; }));
+      saveDB('prods_v139', getDB('prods_v139').concat([p]).filter(function(x,i,a){ return a.indexOf(x)===i; }));
+      var uUSD = vU ? parseFloat(vU) : parseFloat(vB)/t;
+      var uBS  = vB ? parseFloat(vB) : parseFloat(vU)*t;
+      carrito.push({ id: Date.now(), nombre: p, local: l, cant: c, uUSD: uUSD, uBS: uBS, tUSD: uUSD*c, tBS: uBS*c });
+      document.getElementById('prod').value = '';
+      document.getElementById('inUSD').value = '';
+      document.getElementById('inBS').value = '';
+      document.getElementById('cant').value = '';
+      recalculoRapido();
+    }
+
+    function recalculoRapido() {
+      var t = parseFloat(document.getElementById('tasa').value.replace(',','.')) || 1;
+      var pre = parseFloat(document.getElementById('presu').value.replace(',','.')) || 0;
+      var totalUSD = 0, totalBS = 0;
+      var listaDiv = document.getElementById('lista');
+      listaDiv.innerHTML = '';
+      var grupos = {};
+      carrito.forEach(function(i){
+        if (!grupos[i.local]) grupos[i.local] = [];
+        grupos[i.local].push(i);
+        totalUSD += i.tUSD;
+        totalBS  += i.tBS;
+      });
+      for (var loc in grupos) {
+        listaDiv.innerHTML += '<div class="local-group-header">📍 '+loc+'</div>';
+        grupos[loc].forEach(function(i){
+          listaDiv.innerHTML += '<div class="ios-card p-4 mx-2 !mb-2 border-l-4 border-blue-500"><div class="flex justify-between items-start"><p class="font-bold text-lg">'+(emojis[i.nombre]||'📦')+' '+i.nombre+' (x'+i.cant+')</p><button onclick="borrar('+i.id+')" class="text-gray-300">✕</button></div><div class="flex justify-between items-end mt-2 pt-2 border-t border-gray-100"><span class="text-[10px] text-gray-400 font-bold"><span class="text-orange-600 font-black">$'+fmt(i.uUSD)+'</span> | <span class="text-emerald-600 font-black">'+fmt(i.uBS)+'Bs</span></span><div class="text-right"><p class="font-black text-xl leading-none text-slate-800">$'+fmt(i.tUSD)+'</p><p class="text-[10px] text-emerald-500 font-bold">'+fmt(i.tBS)+'Bs</p></div></div></div>';
+        });
+      }
+      var pU = moneda==='USD' ? pre : pre/t;
+      var saldoU = pU - totalUSD;
+      document.getElementById('displaySaldo').innerText = moneda==='USD' ? fmt(saldoU) : fmt(saldoU*t);
+      document.getElementById('displayEquiv').innerText = moneda==='USD' ? fmt(saldoU*t)+' Bs' : fmt(saldoU)+' $';
+      document.getElementById('totalGasto').innerText = fmt(totalBS)+' Bs';
+      document.getElementById('totalGastoUsd').innerText = fmt(totalUSD)+' $';
+    }
+
+    function setMoneda(m) {
+      moneda = m;
+      document.getElementById('monUSD').className = m==='USD' ? 'flex-1 py-2 rounded-lg text-xs font-black bg-white shadow-sm text-orange-600' : 'flex-1 py-2 rounded-lg text-xs font-black text-gray-500';
+      document.getElementById('monBS').className  = m==='BS'  ? 'flex-1 py-2 rounded-lg text-xs font-black bg-white shadow-sm text-emerald-600' : 'flex-1 py-2 rounded-lg text-xs font-black text-gray-500';
+      document.getElementById('headerColor').style.backgroundColor = m==='USD' ? '#f59e0b' : '#10b981';
+      recalculoRapido();
+    }
+
+    function finalizar() {
+      if (carrito.length === 0) return;
+      var h = getDB('hist_v139');
+      h.unshift({ id: Date.now(), fecha: new Date().toLocaleString(), tasa: document.getElementById('tasa').value, pI: document.getElementById('presu').value, mon: moneda, items: carrito.slice(), tBS: document.getElementById('totalGasto').innerText, tUSD: document.getElementById('totalGastoUsd').innerText, sobro: document.getElementById('displaySaldo').innerText+(moneda==='USD'?' $':' Bs') });
+      saveDB('hist_v139', h);
+      carrito = [];
+      document.getElementById('presu').value = '';
+      recalculoRapido();
+      verTab('Hist');
+    }
+
+    // ======= HISTORIAL =======
+    function renderHist() {
+      var h = getDB('hist_v139');
+      if (h.length === 0) {
+        document.getElementById('listaHistorial').innerHTML = '<div class="text-center py-10 text-gray-400"><div class="text-5xl mb-3">🧾</div><p class="font-black uppercase text-sm">Sin compras guardadas</p></div>';
+        return;
+      }
+      var out = '';
+      for (var c = 0; c < h.length; c++) {
+        var co = h[c];
+        var filas = '';
+        for (var j = 0; j < co.items.length; j++) {
+          var it = co.items[j];
+          filas += '<tr><td><b class="text-slate-800 uppercase">'+it.nombre+'</b><br><span class="text-blue-500 font-bold italic">📍 '+it.local+'</span></td><td class="font-black text-center">x'+it.cant+'</td><td><span class="text-orange-600 font-black">$'+fmt(it.uUSD)+'</span><br><span class="text-emerald-600 font-black">'+fmt(it.uBS)+'B</span></td><td class="text-right"><span class="font-black text-slate-800 text-sm">$'+fmt(it.tUSD)+'</span><br><span class="text-[9px] text-emerald-600 font-bold">'+fmt(it.tBS)+'B</span></td></tr>';
+        }
+        out += '<div class="ios-card shadow-lg"><div class="bg-slate-900 p-4 text-white flex justify-between items-center"><span class="text-xs font-black uppercase tracking-widest">'+co.fecha+'</span><span class="bg-blue-600 px-3 py-1 rounded-full text-[9px] font-black italic">BCV: '+co.tasa+'</span></div><div class="p-4"><div class="grid grid-cols-2 gap-3 mb-5"><div class="bg-gray-50 p-3 rounded-2xl border border-gray-100"><p class="text-[8px] font-black text-gray-400 uppercase">Presupuesto</p><p class="text-lg font-black text-slate-800">'+co.pI+' '+co.mon+'</p></div><div class="bg-emerald-50 p-3 rounded-2xl border border-emerald-100"><p class="text-[8px] font-black text-emerald-500 uppercase">Gasto Total</p><p class="text-lg font-black text-emerald-600">'+co.tBS+'</p></div></div><table class="detail-table mb-4"><tbody>'+filas+'</tbody></table><div class="bg-blue-600 p-4 rounded-2xl flex justify-between items-center mb-4 text-white shadow-lg"><span class="text-[10px] font-black uppercase tracking-widest">Saldo Restante:</span><span class="text-2xl font-black">'+co.sobro+'</span></div><div class="flex gap-2"><button onclick="showAlert(\'¿RE-EDITAR?\',\'Se moverá a la calculadora y se borrará del historial.\',function(){ recuperarYBorrar('+co.id+'); })" class="flex-1 py-4 bg-red-500 text-white rounded-2xl text-[10px] font-black uppercase">↩ Editar</button><button onclick="compartirWhatsApp('+co.id+')" class="flex-1 py-4 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase">WhatsApp</button></div></div></div>';
+      }
+      document.getElementById('listaHistorial').innerHTML = out;
+    }
+
+    function recuperarYBorrar(id) {
+      var h = getDB('hist_v139');
+      var r = null;
+      for (var i = 0; i < h.length; i++) { if (h[i].id === id) { r = h[i]; break; } }
+      if (r) {
+        carrito = r.items.slice();
+        document.getElementById('presu').value = r.pI;
+        setMoneda(r.mon);
+        saveDB('hist_v139', h.filter(function(x){ return x.id !== id; }));
+        verTab('Calc');
+        recalculoRapido();
+      }
+    }
+
+    // ======= LISTA FALTANTES =======
+    function anotarPlan() {
+      var v = document.getElementById('itemPlan').value.toUpperCase().trim();
+      if (!v) return;
+      var p = getDB('plan_v139');
+      p.push({ id: Date.now(), n: v });
+      saveDB('plan_v139', p);
+      document.getElementById('itemPlan').value = '';
+      renderPlan();
+    }
+
+    function renderPlan() {
+      var p = getDB('plan_v139');
+      var contenedor = document.getElementById('listaPlan');
+      if (!p || p.length === 0) {
+        contenedor.innerHTML = '<div class="text-center py-10 text-gray-400"><div class="text-5xl mb-3">📋</div><p class="font-black uppercase text-sm">Tu lista está vacía</p><p class="text-xs mt-1">Agrega lo que necesitas comprar</p></div>';
+        return;
+      }
+      var html = '';
+      for (var idx = 0; idx < p.length; idx++) {
+        var item = p[idx];
+        var nombre = String(item.n || '').toUpperCase().trim();
+        var rec = buscarMejorPrecio(nombre);
+        var tag = '';
+        if (rec && rec.precio && rec.precio !== Infinity) {
+          var fc = (rec.fecha && rec.fecha !== 'Compra actual') ? ' · ' + rec.fecha.split(',')[0] : (rec.fecha === 'Compra actual' ? ' · Compra actual' : '');
+          tag = '<div class="mt-2 bg-blue-50 border border-blue-100 rounded-xl p-2 flex items-center gap-2">'
+              + '<span class="text-base">🏷️</span>'
+              + '<div>'
+              + '<p class="text-[10px] font-black text-blue-700 uppercase">Mejor precio visto</p>'
+              + '<p class="text-sm font-black text-orange-600">$' + fmt(rec.precio)
+              + ' <span class="text-gray-500 font-bold text-[10px]">en ' + rec.locales.join(' / ') + fc + '</span></p>'
+              + '</div></div>';
+        } else {
+          var histLen = getDB('hist_v139').length;
+          var msg = histLen === 0
+            ? '📊 Cierra tu primera compra para ver predicciones'
+            : '📊 Sin precios registrados para este producto';
+          tag = '<div class="mt-2"><span class="text-[9px] text-gray-400 italic uppercase">' + msg + '</span></div>';
+        }
+        html += '<div class="ios-card p-4 flex justify-between items-start gap-3">'
+              + '<div class="flex-1">'
+              + '<span class="font-black text-slate-700 uppercase text-lg">' + (emojis[nombre] || '📦') + ' ' + nombre + '</span>'
+              + tag
+              + '</div>'
+              + '<button onclick="borrarPlan(' + item.id + ')" class="text-red-400 font-black p-2 bg-gray-50 rounded-full shadow-inner mt-1 flex-shrink-0">✕</button>'
+              + '</div>';
+      }
+      contenedor.innerHTML = html;
+    }
+
+    function borrarPlan(id) {
+      saveDB('plan_v139', getDB('plan_v139').filter(function(i){ return i.id !== id; }));
+      renderPlan();
+    }
+
+    // ======= WHATSAPP =======
+    function compartirWhatsApp(id) {
+      var h = getDB('hist_v139');
+      var c = null;
+      for (var i = 0; i < h.length; i++) { if (h[i].id === id) { c = h[i]; break; } }
+      if (!c) return;
+      var msg = '🛒 *COMPRA MANU*\n📅 ' + c.fecha + '\n💵 Tasa: ' + c.tasa + '\n------------------\n';
+      c.items.forEach(function(i){ msg += '• *' + i.nombre + '* (' + i.local + ') x' + i.cant + ' -> $' + fmt(i.tUSD) + '\n'; });
+      msg += '------------------\n💰 *TOTAL:* ' + c.tUSD + ' / ' + c.tBS + '\n✅ *SALDO:* ' + c.sobro;
+      window.open('https://wa.me/?text=' + encodeURIComponent(msg));
+    }
+
+    // ======= NAVEGACIÓN =======
+    function verTab(t) {
+      document.querySelectorAll('.tab-content').forEach(function(s){ s.classList.add('hidden'); });
+      document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+      document.getElementById('sec' + t).classList.remove('hidden');
+      document.getElementById('tab' + t).classList.add('active');
+      document.getElementById('footer').style.display = t === 'Calc' ? 'flex' : 'none';
+      if (t === 'Plan') renderPlan();
+      if (t === 'Hist') renderHist();
+    }
+
+    function borrar(id) {
+      carrito = carrito.filter(function(i){ return i.id !== id; });
+      recalculoRapido();
+    }
+
+    window.onload = function() { recalculoRapido(); renderHist(); renderPlan(); };
+  </script>
+</body>
+</html>
