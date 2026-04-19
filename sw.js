@@ -1,20 +1,18 @@
-const CACHE_NAME = 'mercado-manu-v139';
-const urlsToCache = ['/', '/index.html', 'https://cdn.tailwindcss.com'];
+const CACHE_NAME = 'mercado-manu-v1';
+const ASSETS = [
+  '/',
+  '/index.html',
+  '/manifest.json'
+];
 
-self.addEventListener('install', function(e) {
-  e.waitUntil(caches.open(CACHE_NAME).then(function(c){ return c.addAll(urlsToCache); }));
-  self.skipWaiting();
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+  );
 });
 
-self.addEventListener('activate', function(e) {
-  e.waitUntil(caches.keys().then(function(keys){
-    return Promise.all(keys.filter(function(k){ return k !== CACHE_NAME; }).map(function(k){ return caches.delete(k); }));
-  }));
-  self.clients.claim();
-});
-
-self.addEventListener('fetch', function(e) {
-  e.respondWith(caches.match(e.request).then(function(r){
-    return r || fetch(e.request).catch(function(){ return caches.match('/index.html'); });
-  }));
+self.addEventListener('fetch', (e) => {
+  e.respondWith(
+    caches.match(e.request).then((res) => res || fetch(e.request))
+  );
 });
